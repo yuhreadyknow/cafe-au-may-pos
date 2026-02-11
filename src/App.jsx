@@ -57,12 +57,21 @@ const exportBtnStyle = {
   alignItems: "center", gap: "6px", transition: "all 0.15s",
 };
 
+const loadJSON = (key, fallback) => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch { return fallback; }
+};
+
 export default function HomeCafePOS() {
-  const [menu, setMenu] = useState(DEFAULT_MENU);
+  const [menu, setMenu] = useState(() => loadJSON("cafeaumay_menu", DEFAULT_MENU));
   const [order, setOrder] = useState([]);
   const [activeCategory, setActiveCategory] = useState("Drinks");
   const [view, setView] = useState("register");
-  const [dailySales, setDailySales] = useState([]);
+  const [dailySales, setDailySales] = useState(() =>
+    loadJSON("cafeaumay_sales", []).map((s) => ({ ...s, time: new Date(s.time) }))
+  );
   const [flash, setFlash] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   const [newItem, setNewItem] = useState({ name: "", price: "", cost: "", category: "Drinks", emoji: "☕" });
@@ -76,6 +85,9 @@ export default function HomeCafePOS() {
     link.href = FONT_LINK;
     document.head.appendChild(link);
   }, []);
+
+  useEffect(() => { localStorage.setItem("cafeaumay_sales", JSON.stringify(dailySales)); }, [dailySales]);
+  useEffect(() => { localStorage.setItem("cafeaumay_menu", JSON.stringify(menu)); }, [menu]);
 
   // Derived customer data from all sales
   const knownCustomers = useMemo(() => {
