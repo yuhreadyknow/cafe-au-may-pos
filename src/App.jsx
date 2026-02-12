@@ -336,7 +336,7 @@ export default function HomeCafePOS() {
             onChange={(e) => { setCustomerName(e.target.value); setShowSuggestions(true); }}
             onFocus={() => setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-            placeholder="Customer name"
+            placeholder="Customer name (required)"
             style={{
               ...inputBase, width: "100%", fontSize: "15px", fontWeight: 500, padding: "10px 14px",
               background: customerName ? "#fdfaf6" : "#fff",
