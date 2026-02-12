@@ -218,7 +218,7 @@ export default function HomeCafePOS() {
   const orderItemCount = order.reduce((s, o) => s + o.qty, 0);
 
   const completeOrder = () => {
-    if (order.length === 0 || isTodayClosed) return;
+    if (order.length === 0 || isTodayClosed || !customerName.trim()) return;
     setDailySales((prev) => [...prev, {
       items: [...order], total: orderTotal, cost: orderCost,
       time: new Date(), customer: customerName.trim() || null,
@@ -297,7 +297,7 @@ export default function HomeCafePOS() {
     const rows = displaySales.map((sale, i) => [
       i + 1,
       sale.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      escCSV(sale.customer || "Walk-in"),
+      escCSV(sale.customer || ""),
       escCSV(sale.items.map((it) => `${it.qty}x ${it.name}`).join("; ")),
       sale.total.toFixed(2),
       sale.cost.toFixed(2),
@@ -336,7 +336,7 @@ export default function HomeCafePOS() {
             onChange={(e) => { setCustomerName(e.target.value); setShowSuggestions(true); }}
             onFocus={() => setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-            placeholder="Name (optional)"
+            placeholder="Customer name"
             style={{
               ...inputBase, width: "100%", fontSize: "15px", fontWeight: 500, padding: "10px 14px",
               background: customerName ? "#fdfaf6" : "#fff",
@@ -509,8 +509,8 @@ export default function HomeCafePOS() {
           }}>Clear</button>
           <button onClick={completeOrder} style={{
             flex: 2, padding: "14px", borderRadius: "12px", border: "none",
-            background: order.length > 0 && !isTodayClosed ? "#2b2118" : "#d5cbc0", color: "#faf6f1",
-            cursor: order.length > 0 && !isTodayClosed ? "pointer" : "default", fontSize: "15px", fontWeight: 700,
+            background: order.length > 0 && !isTodayClosed && customerName.trim() ? "#2b2118" : "#d5cbc0", color: "#faf6f1",
+            cursor: order.length > 0 && !isTodayClosed && customerName.trim() ? "pointer" : "default", fontSize: "15px", fontWeight: 700,
             fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", letterSpacing: "0.5px",
           }}>Complete Sale ✓</button>
         </div>
@@ -938,9 +938,6 @@ export default function HomeCafePOS() {
                       fontSize: "12px", fontWeight: 600, background: "#f0ebe4",
                       padding: "2px 10px", borderRadius: "100px", color: "#5a4a3a",
                     }}>{sale.customer}</span>
-                  )}
-                  {!sale.customer && (
-                    <span style={{ fontSize: "12px", color: "#c9b9a8", fontStyle: "italic" }}>Walk-in</span>
                   )}
                   <span style={{
                     fontSize: "11px", fontWeight: 600,
