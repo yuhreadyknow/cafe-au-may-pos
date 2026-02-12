@@ -26,8 +26,8 @@ const DEFAULT_MENU = [
 ];
 
 const CATEGORIES = ["Drinks", "Sweet", "Savory", "Add-Ons"];
-const PAYMENT_METHODS = ["Cash", "Venmo", "Zelle"];
-const PAYMENT_COLORS = { Cash: "#2d6a4f", Venmo: "#008CFF", Zelle: "#6C1CD1" };
+const PAYMENT_METHODS = ["Cash", "Venmo"];
+const PAYMENT_COLORS = { Cash: "#2d6a4f", Venmo: "#008CFF", Unpaid: "#9a8b7c" };
 const FONT_LINK = "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,300&family=Instrument+Serif:ital@0;1&display=swap";
 const marginColor = (m) => (m >= 70 ? "#2d6a4f" : m >= 50 ? "#b08c18" : "#c1121f");
 
@@ -100,7 +100,7 @@ export default function HomeCafePOS() {
   const nameInputRef = useRef(null);
 
   // ─── New State ───
-  const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [paymentMethod, setPaymentMethod] = useState(null);
   const [closedDays, setClosedDays] = useState(() => loadJSON("cafeaumay_closed_days", []));
   const [viewingDayId, setViewingDayId] = useState(null);
   const [orderPanelOpen, setOrderPanelOpen] = useState(false);
@@ -182,8 +182,9 @@ export default function HomeCafePOS() {
   const paymentBreakdown = useMemo(() => {
     const breakdown = {};
     PAYMENT_METHODS.forEach((m) => { breakdown[m] = { total: 0, count: 0 }; });
+    breakdown["Unpaid"] = { total: 0, count: 0 };
     displaySales.forEach((s) => {
-      const method = s.paymentMethod || "Cash";
+      const method = s.paymentMethod || "Unpaid";
       if (!breakdown[method]) breakdown[method] = { total: 0, count: 0 };
       breakdown[method].total += s.total;
       breakdown[method].count += 1;
@@ -301,7 +302,7 @@ export default function HomeCafePOS() {
       sale.total.toFixed(2),
       sale.cost.toFixed(2),
       (sale.total - sale.cost).toFixed(2),
-      sale.paymentMethod || "Cash",
+      sale.paymentMethod || "Unpaid",
     ].join(","));
     downloadCSV(`cafe-au-may-orders-${displayDayId}.csv`, [header, ...rows].join("\n"));
   };
@@ -448,12 +449,17 @@ export default function HomeCafePOS() {
 
       {/* Payment Method */}
       <div style={{ padding: "12px 20px", borderTop: "1px solid #f0ebe4" }}>
-        <div style={{ fontSize: "10px", letterSpacing: "1.5px", textTransform: "uppercase", color: "#9a8b7c", fontWeight: 500, marginBottom: "8px" }}>
-          Payment Method
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+          <span style={{ fontSize: "10px", letterSpacing: "1.5px", textTransform: "uppercase", color: "#9a8b7c", fontWeight: 500 }}>
+            Payment Method
+          </span>
+          {!paymentMethod && (
+            <span style={{ fontSize: "11px", color: "#9a8b7c", fontStyle: "italic" }}>Unpaid</span>
+          )}
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
           {PAYMENT_METHODS.map((method) => (
-            <button key={method} onClick={() => setPaymentMethod(method)} style={{
+            <button key={method} onClick={() => setPaymentMethod(paymentMethod === method ? null : method)} style={{
               flex: 1, padding: "8px", borderRadius: "8px",
               border: paymentMethod === method ? `2px solid ${PAYMENT_COLORS[method]}` : "2px solid #e0d5c8",
               background: paymentMethod === method ? `${PAYMENT_COLORS[method]}15` : "#fff",
@@ -469,25 +475,29 @@ export default function HomeCafePOS() {
 
       {/* Order Total */}
       <div style={{ padding: "16px 20px", borderTop: "2px solid #2b2118", background: "#fdfcfa" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-          <span style={{ fontSize: "13px", color: "#9a8b7c" }}>Subtotal</span>
-          <span style={{ fontSize: "13px", color: "#9a8b7c" }}>${orderTotal.toFixed(2)}</span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-          <span style={{ fontSize: "13px", color: "#9a8b7c" }}>Your cost</span>
-          <span style={{ fontSize: "13px", color: "#9a8b7c" }}>−${orderCost.toFixed(2)}</span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <span style={{ fontSize: "13px", fontWeight: 700, color: marginColor(orderMargin) }}>
-            Profit ({orderMargin}% margin)
-          </span>
-          <span style={{ fontSize: "13px", fontWeight: 700, color: marginColor(orderMargin) }}>
-            ${orderProfit.toFixed(2)}
-          </span>
-        </div>
+        {!isPortrait && (
+          <>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span style={{ fontSize: "13px", color: "#9a8b7c" }}>Subtotal</span>
+              <span style={{ fontSize: "13px", color: "#9a8b7c" }}>${orderTotal.toFixed(2)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span style={{ fontSize: "13px", color: "#9a8b7c" }}>Your cost</span>
+              <span style={{ fontSize: "13px", color: "#9a8b7c" }}>−${orderCost.toFixed(2)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <span style={{ fontSize: "13px", fontWeight: 700, color: marginColor(orderMargin) }}>
+                Profit ({orderMargin}% margin)
+              </span>
+              <span style={{ fontSize: "13px", fontWeight: 700, color: marginColor(orderMargin) }}>
+                ${orderProfit.toFixed(2)}
+              </span>
+            </div>
+          </>
+        )}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "16px" }}>
           <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: "14px", color: "#9a8b7c" }}>Total</span>
-          <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: "36px", letterSpacing: "-1px" }}>
+          <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: isPortrait ? "28px" : "36px", letterSpacing: "-1px" }}>
             ${orderTotal.toFixed(2)}
           </span>
         </div>
@@ -878,9 +888,11 @@ export default function HomeCafePOS() {
           </div>
 
           {/* Payment Breakdown */}
-          {displaySales.length > 0 && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "12px", marginBottom: "28px" }}>
-              {PAYMENT_METHODS.map((method) => (
+          {displaySales.length > 0 && (() => {
+            const methods = [...PAYMENT_METHODS, ...(paymentBreakdown["Unpaid"].count > 0 ? ["Unpaid"] : [])];
+            return (
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${methods.length}, 1fr)`, gap: "12px", marginBottom: "28px" }}>
+              {methods.map((method) => (
                 <div key={method} style={{
                   background: "#fff", borderRadius: "12px", padding: "14px 16px",
                   border: "1.5px solid #f0ebe4", display: "flex", alignItems: "center", gap: "10px",
@@ -898,7 +910,8 @@ export default function HomeCafePOS() {
                 </div>
               ))}
             </div>
-          )}
+            );
+          })()}
 
           {/* Orders List */}
           <h3 style={{ fontSize: "12px", letterSpacing: "2px", textTransform: "uppercase", color: "#9a8b7c", marginBottom: "12px", fontWeight: 500 }}>
@@ -931,11 +944,11 @@ export default function HomeCafePOS() {
                   )}
                   <span style={{
                     fontSize: "11px", fontWeight: 600,
-                    background: `${PAYMENT_COLORS[sale.paymentMethod || "Cash"]}15`,
-                    color: PAYMENT_COLORS[sale.paymentMethod || "Cash"],
+                    background: `${PAYMENT_COLORS[sale.paymentMethod || "Unpaid"]}15`,
+                    color: PAYMENT_COLORS[sale.paymentMethod || "Unpaid"],
                     padding: "2px 8px", borderRadius: "100px",
                   }}>
-                    {sale.paymentMethod || "Cash"}
+                    {sale.paymentMethod || "Unpaid"}
                   </span>
                   <span style={{ fontSize: "12px", color: "#9a8b7c" }}>
                     {sale.time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
